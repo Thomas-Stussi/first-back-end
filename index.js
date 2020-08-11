@@ -10,6 +10,7 @@ app.use(cors());
 const { 
     GEOCODE_API_KEY,
     WEATHER_API_KEY,
+    HIKING_API_KEY,
 } = process.env;
 
 async function getLatLong(cityName) {
@@ -27,7 +28,10 @@ async function getLatLong(cityName) {
 async function getWeather(lat, lon) {
     const response = await request.get(`https://api.weatherbit.io/v2.0/forecast/daily?&lat=${lat}&lon=${lon}&key=${WEATHER_API_KEY}`);
     
-    const forecastArray = response.body.data.map((weatherItem) => {
+    let data = response.body.data;
+    data = data.slice(0, 9);
+    
+    const forecastArray = data.map((weatherItem) => {
         return {
             forecast: weatherItem.weather.description,
             time: new Date(weatherItem.ts * 1000),
@@ -35,6 +39,28 @@ async function getWeather(lat, lon) {
     
     });
     return forecastArray;
+}
+
+async function getTrails(lat, lon) {
+    const response = await request.get(`https://www.hikingproject.com/data/get-trails?lat=${lat}&lon=${lon}&maxDistance=200&key=${HIKING_API_KEY}`);
+
+    let data = response.body.trails;
+
+    console.log(data);
+    let hikeArray = data.map((hike) => {
+        return {
+            name: hike.name,
+            location: hike.location,
+            length: hike.length,
+            stars: hike.stars,
+            star_votes: hike.starVotes,
+            summary: hike.summary,
+            trail_url: hike.url,
+            conditions: hike.conditionStatus,
+            condition_date: hike.conditionDate
+        };
+    });
+    return hikeArray;
 }
 
 app.get('/location', async(req, res) => {
@@ -56,6 +82,19 @@ app.get('/weather', async(req, res) => {
 
         const mungedData = await getWeather(userLat, userLon);
         res.json(mungedData);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.get('/trails', async(req, res) => {
+    try {
+        const userLat = req.query.latitude;
+        const userLon = req.query.longitude;
+
+        const mungedData = await getTrails(userLat, userLon);
+        res.json(mungedData);
+
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
