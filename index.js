@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 var cors = require('cors');
 const app = express();
@@ -25,8 +26,8 @@ async function getLatLong(cityName) {
 
 async function getWeather(lat, lon) {
     const response = await request.get(`https://api.weatherbit.io/v2.0/forecast/daily?&lat=${lat}&lon=${lon}&key=${WEATHER_API_KEY}`);
-    console.log(response);
-    const forecastArray = response.map((weatherItem) => {
+    
+    const forecastArray = response.body.data.map((weatherItem) => {
         return {
             forecast: weatherItem.weather.description,
             time: new Date(weatherItem.ts * 1000),
